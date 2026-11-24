@@ -41,6 +41,8 @@ jobs:
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/targetSdkVersion 34/targetSdkVersion 36/g' {} + || true
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/g' {} + || true
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/minSdkVersion = flutter.minSdkVersion/minSdkVersion = 24/g' {} + || true
+          # Use official services.gradle.org CDN for fast and reliable Gradle distribution download
+          sed -i 's|distributionUrl=.*|distributionUrl=https\\://services.gradle.org/distributions/gradle-9.5.0-bin.zip|' android/gradle/wrapper/gradle-wrapper.properties || true
 
       - name: ☕ Set up Java (JDK 17)
         uses: actions/setup-java@v4
@@ -54,7 +56,7 @@ jobs:
           # Directly align all third-party plugins in pub-cache with Android SDK 36
           find /home/runner/.pub-cache -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdkVersion [0-9]\+/compileSdkVersion 36/g' {} + || true
           find /home/runner/.pub-cache -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdk = [0-9]\+/compileSdk = 36/g' {} + || true
-          find /home/runner/.pub-cache -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdkVersion = [0-9]\+/compileSdkVersion = 36/g' {} + || true
+          find /home/runner/.pub-cache -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdkVersion = [0-9]\+/compileSdkVersion 36/g' {} + || true
           find /home/runner/.pub-cache -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdk [0-9]\+/compileSdk 36/g' {} + || true
 
       - name: ⚡ Build AI Reel Studio Release APK
