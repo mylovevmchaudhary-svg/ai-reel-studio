@@ -30,14 +30,9 @@ jobs:
           cp android/app/src/main/AndroidManifest.xml /tmp/custom_manifest/AndroidManifest.xml || true
           rm -rf android
           flutter create --platforms=android --org com.aireelstudio.app --project-name ai_reel_studio .
-          # Restore custom permissions and config
           cp /tmp/custom_manifest/AndroidManifest.xml android/app/src/main/AndroidManifest.xml || true
-          # Configure App Launcher Name to "AI Reel Studio"
           sed -i 's/android:label="[^"]*"/android:label="AI Reel Studio"/g' android/app/src/main/AndroidManifest.xml || true
-          # Remove package attribute for AGP 8+ compatibility
           sed -i 's/package="[^"]*"//g' android/app/src/main/AndroidManifest.xml || true
-
-          # Set compileSdk 36, targetSdk 36, minSdk 24
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/g' {} + || true
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdkVersion = flutter.compileSdkVersion/compileSdkVersion 36/g' {} + || true
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdkVersion 34/compileSdkVersion 36/g' {} + || true
@@ -46,55 +41,7 @@ jobs:
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/targetSdkVersion 34/targetSdkVersion 36/g' {} + || true
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/g' {} + || true
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/minSdkVersion = flutter.minSdkVersion/minSdkVersion = 24/g' {} + || true
-
-          # Inject subprojects overrides into android/build.gradle.kts if present
-          if [ -f "android/build.gradle.kts" ]; then
-            cat << 'EOF' >> android/build.gradle.kts
-
-subprojects {
-    afterEvaluate {
-        val androidExt = extensions.findByName("android")
-        if (androidExt != null) {
-            try {
-                val method = androidExt.javaClass.getMethod("setCompileSdkVersion", Int::class.javaPrimitiveType)
-                method.invoke(androidExt, 36)
-            } catch (e: Exception) {
-                try {
-                    val method = androidExt.javaClass.getMethod("compileSdkVersion", Int::class.javaPrimitiveType)
-                    method.invoke(androidExt, 36)
-                } catch (e2: Exception) {}
-            }
-        }
-    }
-    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-        enabled = false
-    }
-}
-EOF
-          fi
-
-          # Inject subprojects overrides into android/build.gradle if present
-          if [ -f "android/build.gradle" ]; then
-            cat << 'EOF' >> android/build.gradle
-
-subprojects {
-    afterEvaluate { project ->
-        if (project.hasProperty('android')) {
-            project.android {
-                if (namespace != null || it.hasProperty('compileSdk')) {
-                    compileSdk 36
-                } else {
-                    compileSdkVersion 36
-                }
-            }
-        }
-    }
-    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-        enabled = false
-    }
-}
-EOF
-          fi
+          python3 .github/scripts/patch_gradle.py
 
       - name: ☕ Set up Java (JDK 17)
         uses: actions/setup-java@v4
