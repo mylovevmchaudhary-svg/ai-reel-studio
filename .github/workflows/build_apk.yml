@@ -36,6 +36,8 @@ jobs:
           # Set minSdkVersion to 24 for media & audio APIs
           sed -i 's/minSdkVersion = flutter.minSdkVersion/minSdkVersion = 24/g' android/app/build.gradle || true
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/g' android/app/build.gradle || true
+          # Remove package attribute for AGP 8+ compatibility
+          sed -i 's/package="[^"]*"//g' android/app/src/main/AndroidManifest.xml || true
 
       - name: ☕ Set up Java (JDK 17)
         uses: actions/setup-java@v4
