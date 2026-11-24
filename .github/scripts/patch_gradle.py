@@ -1,9 +1,15 @@
 import os
 
 kts_patch = """
+allprojects {
+    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
+        enabled = false
+    }
+}
+
 subprojects {
-    afterEvaluate {
-        val androidExt = extensions.findByName("android")
+    if (project.state.executed) {
+        val androidExt = project.extensions.findByName("android")
         if (androidExt != null) {
             try {
                 val m = androidExt.javaClass.getMethod("setCompileSdkVersion", Int::class.javaPrimitiveType)
@@ -15,16 +21,34 @@ subprojects {
                 } catch (e2: Exception) {}
             }
         }
-    }
-    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
-        enabled = false
+    } else {
+        project.afterEvaluate {
+            val androidExt = project.extensions.findByName("android")
+            if (androidExt != null) {
+                try {
+                    val m = androidExt.javaClass.getMethod("setCompileSdkVersion", Int::class.javaPrimitiveType)
+                    m.invoke(androidExt, 36)
+                } catch (e: Exception) {
+                    try {
+                        val m = androidExt.javaClass.getMethod("compileSdkVersion", Int::class.javaPrimitiveType)
+                        m.invoke(androidExt, 36)
+                    } catch (e2: Exception) {}
+                }
+            }
+        }
     }
 }
 """
 
 groovy_patch = """
-subprojects {
-    afterEvaluate { project ->
+allprojects {
+    tasks.matching { it.name.contains("AarMetadata") }.configureEach {
+        enabled = false
+    }
+}
+
+subprojects { project ->
+    def configureAndroid = {
         if (project.hasProperty('android')) {
             project.android {
                 if (namespace != null || it.hasProperty('compileSdk')) {
@@ -35,8 +59,12 @@ subprojects {
             }
         }
     }
-    tasks.matching { it.name.contains('AarMetadata') }.configureEach {
-        enabled = false
+    if (project.state.executed) {
+        configureAndroid()
+    } else {
+        project.afterEvaluate {
+            configureAndroid()
+        }
     }
 }
 """
