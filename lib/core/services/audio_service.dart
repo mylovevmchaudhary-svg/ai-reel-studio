@@ -123,6 +123,30 @@ class AudioService {
     }
   }
 
+  /// Synthesize text to an audio file on disk using native TTS
+  Future<String?> synthesizeToFile(String text, String sceneId, {String language = 'en'}) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final voiceDir = Directory(p.join(dir.path, 'voiceovers'));
+      if (!await voiceDir.exists()) {
+        await voiceDir.create(recursive: true);
+      }
+      final fileName = 'vo_${sceneId}_${DateTime.now().millisecondsSinceEpoch}.wav';
+      final filePath = p.join(voiceDir.path, fileName);
+
+      String langCode = 'en-US';
+      if (language == 'hi') langCode = 'hi-IN';
+      if (language == 'gu') langCode = 'gu-IN';
+      await _tts.setLanguage(langCode);
+
+      await _tts.synthesizeToFile(text, fileName);
+      return filePath;
+    } catch (e) {
+      debugPrint('[AudioService] synthesizeToFile error: $e');
+      return null;
+    }
+  }
+
   /// Stop TTS Speech
   Future<void> stopTts() async {
     try {

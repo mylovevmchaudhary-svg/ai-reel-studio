@@ -28,9 +28,12 @@ jobs:
           mkdir -p assets/images assets/audio assets/icons
           mkdir -p /tmp/custom_manifest
           cp android/app/src/main/AndroidManifest.xml /tmp/custom_manifest/AndroidManifest.xml || true
+          mkdir -p /tmp/custom_kotlin
+          cp -r android/app/src/main/kotlin/* /tmp/custom_kotlin/ || true
           rm -rf android
           flutter create --platforms=android --org com.aireelstudio.app --project-name ai_reel_studio .
           cp /tmp/custom_manifest/AndroidManifest.xml android/app/src/main/AndroidManifest.xml || true
+          cp -r /tmp/custom_kotlin/* android/app/src/main/kotlin/ || true
           sed -i 's/android:label="[^"]*"/android:label="AI Reel Studio"/g' android/app/src/main/AndroidManifest.xml || true
           sed -i 's/package="[^"]*"//g' android/app/src/main/AndroidManifest.xml || true
           find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/g' {} + || true

@@ -51,6 +51,7 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
   void dispose() {
     _timer?.cancel();
     _audio.stopAudio();
+    _audio.stopTts();
     super.dispose();
   }
 
@@ -68,9 +69,19 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
     if (_isPlaying) {
       _timer?.cancel();
       _audio.stopAudio();
+      _audio.stopTts();
       setState(() => _isPlaying = false);
     } else {
       setState(() => _isPlaying = true);
+      if (_scenes.isNotEmpty) {
+        final firstScene = _scenes[_activeSceneIndex];
+        final vo = _voiceovers.where((v) => v.sceneId == firstScene.id).firstOrNull;
+        if (vo?.localPath != null && File(vo!.localPath!).existsSync()) {
+          _audio.playAudio(vo.localPath!);
+        } else if (firstScene.narration != null && firstScene.narration!.isNotEmpty) {
+          _audio.speakText(firstScene.narration!, language: _project?.language ?? 'hi');
+        }
+      }
       _timer = Timer.periodic(const Duration(milliseconds: 100), (t) {
         setState(() {
           _currentPositionSeconds += 0.1;
@@ -79,6 +90,7 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
             _isPlaying = false;
             _timer?.cancel();
             _audio.stopAudio();
+            _audio.stopTts();
           } else {
             _syncScene();
           }
@@ -94,9 +106,12 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
       if (_currentPositionSeconds <= acc) {
         if (_activeSceneIndex != i) {
           _activeSceneIndex = i;
-          final vo = _voiceovers.where((v) => v.sceneId == _scenes[i].id).firstOrNull;
+          final currentScene = _scenes[i];
+          final vo = _voiceovers.where((v) => v.sceneId == currentScene.id).firstOrNull;
           if (vo?.localPath != null && File(vo!.localPath!).existsSync()) {
             _audio.playAudio(vo.localPath!);
+          } else if (currentScene.narration != null && currentScene.narration!.isNotEmpty) {
+            _audio.speakText(currentScene.narration!, language: _project?.language ?? 'hi');
           }
         }
         break;
@@ -157,19 +172,31 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
                   child: Stack(
                     fit: StackFit.expand,
                     children: [
-                      if (activeAsset?.localPath != null && File(activeAsset!.localPath!).existsSync())
-                        Image.file(File(activeAsset.localPath!), fit: BoxFit.cover)
-                      else
-                        Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.movie, size: 54, color: AppColors.accentPurple),
-                              const SizedBox(height: 12),
-                              Text(activeScene?.title ?? 'Scene ${_activeSceneIndex + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 400),
+                        child: (activeAsset?.localPath != null && File(activeAsset!.localPath!).existsSync())
+                            ? Image.file(
+                                File(activeAsset!.localPath!),
+                                key: ValueKey<String>(activeAsset.localPath!),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              )
+                            : Container(
+                                key: ValueKey<int>(_activeSceneIndex),
+                                color: const Color(0xFF131B2E),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.movie, size: 54, color: AppColors.accentPurple),
+                                      const SizedBox(height: 12),
+                                      Text(activeScene?.title ?? 'Scene ${_activeSceneIndex + 1}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                      ),
 
                       // Caption
                       if (activeCaption != null)

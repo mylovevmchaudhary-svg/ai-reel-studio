@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/scene_visual_generator.dart';
 import '../../../data/models/scene_model.dart';
 import '../../../data/models/scene_asset_model.dart';
 import '../../../data/models/voiceover_model.dart';
@@ -60,6 +62,22 @@ class _SceneManagerScreenState extends State<SceneManagerScreen> {
     _loadScenes();
   }
 
+  Future<void> _autoGenerateAllVisuals() async {
+    setState(() => _isLoading = true);
+    final project = await _repo.getProject(widget.projectId);
+    await SceneVisualGenerator.instance.generateVisualsForProject(
+      scenes: _scenes,
+      aspectRatio: project?.aspectRatio ?? '9:16',
+      visualStyle: project?.visualStyle ?? 'Cinematic',
+      storyTitle: project?.title ?? 'Reel Story',
+      language: project?.language ?? 'hi',
+    );
+    await _loadScenes();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('All scene visuals generated and saved! 🎨📸')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,6 +85,11 @@ class _SceneManagerScreenState extends State<SceneManagerScreen> {
       appBar: AppBar(
         title: const Text('Scene Manager'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.auto_awesome, color: AppColors.accentCyan),
+            tooltip: 'Auto-Generate All Photos',
+            onPressed: _autoGenerateAllVisuals,
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Scene',
@@ -105,7 +128,8 @@ class _SceneManagerScreenState extends State<SceneManagerScreen> {
                   itemCount: _scenes.length,
                   itemBuilder: (context, index) {
                     final scene = _scenes[index];
-                    final hasImage = _assets.any((a) => a.sceneId == scene.id && a.isActive);
+                    final matchingAsset = _assets.where((a) => a.sceneId == scene.id && a.isActive).firstOrNull;
+                    final hasImage = matchingAsset != null;
                     final hasVoiceover = _voiceovers.any((v) => v.sceneId == scene.id);
 
                     return Container(
@@ -167,6 +191,18 @@ class _SceneManagerScreenState extends State<SceneManagerScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.7)),
                           ),
+                          if (matchingAsset?.localPath != null && File(matchingAsset!.localPath!).existsSync()) ...[
+                            const SizedBox(height: 10),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: Image.file(
+                                File(matchingAsset.localPath!),
+                                height: 110,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
 
                           // Badges & Action Buttons

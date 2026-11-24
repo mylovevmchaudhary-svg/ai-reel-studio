@@ -107,10 +107,36 @@ class _VoiceoverStudioScreenState extends State<VoiceoverStudioScreen> {
   }
 
   Future<void> _generateTts(SceneModel scene) async {
+    final project = await _repo.getProject(widget.projectId);
     final text = scene.narration ?? scene.title ?? 'Scene narration';
-    await _audio.speakText(text, language: 'en');
+    await _audio.speakText(text, language: project?.language ?? 'hi');
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Playing offline TTS narration preview... 🗣️')),
+    );
+  }
+
+  Future<void> _generateAllSceneVoices() async {
+    setState(() => _isLoading = true);
+    final project = await _repo.getProject(widget.projectId);
+    final lang = project?.language ?? 'hi';
+
+    for (final s in _scenes) {
+      final text = s.narration ?? s.title ?? 'Scene';
+      final path = await _audio.synthesizeToFile(text, s.id, language: lang);
+      final vo = VoiceoverModel(
+        id: _uuid.v4(),
+        sceneId: s.id,
+        projectId: widget.projectId,
+        ownerId: SupabaseService.instance.currentUserId,
+        localPath: path,
+        sourceType: 'tts',
+        durationSeconds: s.durationSeconds,
+      );
+      await _repo.saveVoiceover(vo);
+    }
+    await _loadData();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('All scene voiceovers generated and ready! 🎙️🔊')),
     );
   }
 
@@ -123,6 +149,13 @@ class _VoiceoverStudioScreenState extends State<VoiceoverStudioScreen> {
       backgroundColor: AppColors.bgDark,
       appBar: AppBar(
         title: const Text('Voiceover Studio'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.record_voice_over, color: AppColors.accentCyan),
+            tooltip: 'Auto-Generate All Voices',
+            onPressed: _generateAllSceneVoices,
+          ),
+        ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: AppColors.accentPurple))

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:uuid/uuid.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/prompt_generator.dart';
 import '../../../core/services/story_engine.dart';
+import '../../../core/services/scene_visual_generator.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../../data/models/caption_model.dart';
+import '../../../data/models/voiceover_model.dart';
 import '../../../data/repositories/project_repository.dart';
 import 'story_editor_screen.dart';
 
@@ -88,6 +92,44 @@ class _StoryPromptScreenState extends State<StoryPromptScreen> {
       }
       for (final s in package.scenes) {
         await _repo.saveScene(s);
+      }
+
+      // 1. Auto-generate Real High-Res Visual Photos for all scenes
+      await SceneVisualGenerator.instance.generateVisualsForProject(
+        scenes: package.scenes,
+        aspectRatio: widget.aspectRatio,
+        visualStyle: widget.visualStyle,
+        storyTitle: package.story.storyTitle,
+        language: widget.language,
+      );
+
+      // 2. Auto-generate Synchronized Captions & Voiceover links for all scenes
+      double cumulativeSec = 0.0;
+      for (final s in package.scenes) {
+        final startMs = (cumulativeSec * 1000).toInt();
+        cumulativeSec += s.durationSeconds;
+        final endMs = (cumulativeSec * 1000).toInt();
+
+        final caption = CaptionModel(
+          id: const Uuid().v4(),
+          projectId: widget.projectId,
+          ownerId: package.story.ownerId,
+          sceneId: s.id,
+          startTimeMs: startMs,
+          endTimeMs: endMs,
+          text: s.narration ?? s.title ?? 'Scene',
+        );
+        await _repo.saveCaption(caption);
+
+        final vo = VoiceoverModel(
+          id: const Uuid().v4(),
+          sceneId: s.id,
+          projectId: widget.projectId,
+          ownerId: package.story.ownerId,
+          sourceType: 'tts',
+          durationSeconds: s.durationSeconds,
+        );
+        await _repo.saveVoiceover(vo);
       }
 
       if (mounted) {
