@@ -151,7 +151,7 @@ class _VoiceoverStudioScreenState extends State<VoiceoverStudioScreen> {
                             value: s.id,
                             child: Text('Scene ${s.sceneIndex}: ${s.title ?? "Untitled"}', style: const TextStyle(color: Colors.white, fontSize: 13)),
                           );
-                        }).toList>,
+                        }).toList(),
                         onChanged: (val) {
                           if (val != null) setState(() => _selectedSceneId = val);
                         },
