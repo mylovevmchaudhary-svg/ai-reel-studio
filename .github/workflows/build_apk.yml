@@ -1,0 +1,56 @@
+name: Build AI Reel Studio APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build AI Reel Studio Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐦 Set up Flutter SDK
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 🛠️ Initialize Clean Android Scaffolding
+        run: |
+          mkdir -p /tmp/custom_manifest
+          cp android/app/src/main/AndroidManifest.xml /tmp/custom_manifest/AndroidManifest.xml || true
+          rm -rf android
+          flutter create --platforms=android --org com.aireelstudio.app --project-name ai_reel_studio .
+          # Restore custom permissions and config
+          cp /tmp/custom_manifest/AndroidManifest.xml android/app/src/main/AndroidManifest.xml || true
+          # Configure App Launcher Name to "AI Reel Studio"
+          sed -i 's/android:label="[^"]*"/android:label="AI Reel Studio"/g' android/app/src/main/AndroidManifest.xml || true
+          # Set minSdkVersion to 24 for media & audio APIs
+          sed -i 's/minSdkVersion = flutter.minSdkVersion/minSdkVersion = 24/g' android/app/build.gradle || true
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/g' android/app/build.gradle || true
+
+      - name: ☕ Set up Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: 📦 Install App Dependencies
+        run: flutter pub get
+
+      - name: ⚡ Build AI Reel Studio Release APK
+        run: flutter build apk --release
+
+      - name: 🚀 Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AIReelStudio-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
