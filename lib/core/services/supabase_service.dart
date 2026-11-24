@@ -18,8 +18,8 @@ class SupabaseService {
   SupabaseService._internal();
 
   // Supabase Configuration (can be dynamically set from settings or environment)
-  String supabaseUrl = 'https://ayfivdknsczpvpmhbbjt.supabase.co';
-  String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_anon_key';
+  String supabaseUrl = 'https://yrcpohwezjawmoanlqfz.supabase.co';
+  String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlyY3BvaHdlemphd21vYW5scWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU1MTk4NzksImV4cCI6MjExMTA5NTg3OX0.5bVaOLgq24LK2D64-jPx6HlFONUVvBpZWr2nuLKEkFE';
   
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
