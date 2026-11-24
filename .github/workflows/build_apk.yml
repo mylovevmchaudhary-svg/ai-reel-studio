@@ -34,8 +34,8 @@ jobs:
           # Configure App Launcher Name to "AI Reel Studio"
           sed -i 's/android:label="[^"]*"/android:label="AI Reel Studio"/g' android/app/src/main/AndroidManifest.xml || true
           # Set minSdkVersion to 24 for media & audio APIs
-          sed -i 's/minSdkVersion = flutter.minSdkVersion/minSdkVersion = 24/g' android/app/build.gradle || true
-          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/g' android/app/build.gradle || true
+          find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/minSdkVersion = flutter.minSdkVersion/minSdkVersion = 24/g' {} + || true
+          find android -type f \( -name "build.gradle" -o -name "build.gradle.kts" \) -exec sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/g' {} + || true
           # Remove package attribute for AGP 8+ compatibility
           sed -i 's/package="[^"]*"//g' android/app/src/main/AndroidManifest.xml || true
 
