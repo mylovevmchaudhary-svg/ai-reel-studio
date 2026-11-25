@@ -107,9 +107,9 @@ class _VoiceoverStudioScreenState extends State<VoiceoverStudioScreen> {
   }
 
   Future<void> _generateTts(SceneModel scene) async {
-    final project = await _repo.getProject(widget.projectId);
+    final story = await _repo.getStory(widget.projectId);
     final text = scene.narration ?? scene.title ?? 'Scene narration';
-    await _audio.speakText(text, language: project?.language ?? 'hi');
+    await _audio.speakText(text, language: story?.promptLanguage ?? 'hi');
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Playing offline TTS narration preview... 🗣️')),
     );
@@ -117,8 +117,8 @@ class _VoiceoverStudioScreenState extends State<VoiceoverStudioScreen> {
 
   Future<void> _generateAllSceneVoices() async {
     setState(() => _isLoading = true);
-    final project = await _repo.getProject(widget.projectId);
-    final lang = project?.language ?? 'hi';
+    final story = await _repo.getStory(widget.projectId);
+    final lang = story?.promptLanguage ?? 'hi';
 
     for (final s in _scenes) {
       final text = s.narration ?? s.title ?? 'Scene';

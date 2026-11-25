@@ -232,10 +232,10 @@ class SceneVisualGenerator {
       projectId: scene.projectId,
       ownerId: scene.ownerId,
       assetType: 'image',
+      assetUrl: filePath,
       localPath: filePath,
       aspectRatio: aspectRatio,
       isActive: true,
-      metadata: {'width': width.toInt(), 'height': height.toInt(), 'style': visualStyle},
     );
 
     await _repo.saveSceneAsset(asset);

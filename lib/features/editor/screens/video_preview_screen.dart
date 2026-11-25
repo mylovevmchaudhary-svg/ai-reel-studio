@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/audio_service.dart';
 import '../../../data/models/project_model.dart';
+import '../../../data/models/story_model.dart';
 import '../../../data/models/scene_model.dart';
 import '../../../data/models/scene_asset_model.dart';
 import '../../../data/models/voiceover_model.dart';
@@ -26,6 +27,7 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
 
   bool _isLoading = true;
   ProjectModel? _project;
+  StoryModel? _story;
   List<SceneModel> _scenes = [];
   List<SceneAssetModel> _assets = [];
   List<VoiceoverModel> _voiceovers = [];
@@ -58,6 +60,7 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
   Future<void> _loadProject() async {
     setState(() => _isLoading = true);
     _project = await _repo.getProject(widget.projectId);
+    _story = await _repo.getStory(widget.projectId);
     _scenes = await _repo.getScenes(widget.projectId);
     _assets = await _repo.getAssetsForProject(widget.projectId);
     _voiceovers = await _repo.getVoiceoversForProject(widget.projectId);
@@ -79,7 +82,7 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
         if (vo?.localPath != null && File(vo!.localPath!).existsSync()) {
           _audio.playAudio(vo.localPath!);
         } else if (firstScene.narration != null && firstScene.narration!.isNotEmpty) {
-          _audio.speakText(firstScene.narration!, language: _project?.language ?? 'hi');
+          _audio.speakText(firstScene.narration!, language: _story?.promptLanguage ?? 'hi');
         }
       }
       _timer = Timer.periodic(const Duration(milliseconds: 100), (t) {
@@ -111,7 +114,7 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
           if (vo?.localPath != null && File(vo!.localPath!).existsSync()) {
             _audio.playAudio(vo.localPath!);
           } else if (currentScene.narration != null && currentScene.narration!.isNotEmpty) {
-            _audio.speakText(currentScene.narration!, language: _project?.language ?? 'hi');
+            _audio.speakText(currentScene.narration!, language: _story?.promptLanguage ?? 'hi');
           }
         }
         break;

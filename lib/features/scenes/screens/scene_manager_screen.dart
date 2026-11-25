@@ -65,12 +65,13 @@ class _SceneManagerScreenState extends State<SceneManagerScreen> {
   Future<void> _autoGenerateAllVisuals() async {
     setState(() => _isLoading = true);
     final project = await _repo.getProject(widget.projectId);
+    final story = await _repo.getStory(widget.projectId);
     await SceneVisualGenerator.instance.generateVisualsForProject(
       scenes: _scenes,
       aspectRatio: project?.aspectRatio ?? '9:16',
-      visualStyle: project?.visualStyle ?? 'Cinematic',
-      storyTitle: project?.title ?? 'Reel Story',
-      language: project?.language ?? 'hi',
+      visualStyle: story?.genre ?? 'Cinematic',
+      storyTitle: story?.storyTitle ?? project?.title ?? 'Reel Story',
+      language: story?.promptLanguage ?? 'hi',
     );
     await _loadScenes();
     ScaffoldMessenger.of(context).showSnackBar(
