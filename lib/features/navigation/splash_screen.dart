@@ -50,17 +50,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     await Future.delayed(const Duration(milliseconds: 1800));
 
     if (mounted) {
-      if (SupabaseService.instance.isAuthenticated) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AppBottomNav()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
+      // Offline-first: If not already authenticated, automatically start in Guest/Creator mode
+      if (!SupabaseService.instance.isAuthenticated) {
+        SupabaseService.instance.signInAsGuest();
       }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AppBottomNav()),
+      );
     }
   }
 

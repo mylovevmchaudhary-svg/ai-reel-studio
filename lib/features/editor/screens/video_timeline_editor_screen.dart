@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/services/audio_service.dart';
+import '../../../core/services/scene_visual_generator.dart';
 import '../../../data/models/project_model.dart';
+import '../../../data/models/story_model.dart';
 import '../../../data/models/scene_model.dart';
 import '../../../data/models/scene_asset_model.dart';
 import '../../../data/models/voiceover_model.dart';
@@ -29,6 +31,7 @@ class _VideoTimelineEditorScreenState extends State<VideoTimelineEditorScreen> {
 
   bool _isLoading = true;
   ProjectModel? _project;
+  StoryModel? _story;
   List<SceneModel> _scenes = [];
   List<SceneAssetModel> _assets = [];
   List<VoiceoverModel> _voiceovers = [];
@@ -59,12 +62,14 @@ class _VideoTimelineEditorScreenState extends State<VideoTimelineEditorScreen> {
   void dispose() {
     _playbackTimer?.cancel();
     _audio.stopAudio();
+    _audio.stopTts();
     super.dispose();
   }
 
   Future<void> _loadProjectData() async {
     setState(() => _isLoading = true);
     _project = await _repo.getProject(widget.projectId);
+    _story = await _repo.getStory(widget.projectId);
     _scenes = await _repo.getScenes(widget.projectId);
     _assets = await _repo.getAssetsForProject(widget.projectId);
     _voiceovers = await _repo.getVoiceoversForProject(widget.projectId);
@@ -77,6 +82,17 @@ class _VideoTimelineEditorScreenState extends State<VideoTimelineEditorScreen> {
     setState(() => _isLoading = false);
   }
 
+  void _playSceneAudio(int index) {
+    if (index < 0 || index >= _scenes.length) return;
+    final scene = _scenes[index];
+    final vo = _voiceovers.where((v) => v.sceneId == scene.id).firstOrNull;
+    if (vo?.localPath != null && File(vo!.localPath!).existsSync()) {
+      _audio.playAudio(vo!.localPath!, volume: _voiceoverVolume);
+    } else if (scene.narration != null && scene.narration!.trim().isNotEmpty) {
+      _audio.speakText(scene.narration!, language: _story?.promptLanguage ?? 'hi');
+    }
+  }
+
   void _togglePlayPause() {
     if (_isPlaying) {
       _pausePlayback();
@@ -87,6 +103,7 @@ class _VideoTimelineEditorScreenState extends State<VideoTimelineEditorScreen> {
 
   void _startPlayback() {
     setState(() => _isPlaying = true);
+    _playSceneAudio(_selectedSceneIndex);
     _playbackTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       setState(() {
         _currentPositionSeconds += 0.1;
@@ -103,6 +120,7 @@ class _VideoTimelineEditorScreenState extends State<VideoTimelineEditorScreen> {
   void _pausePlayback() {
     _playbackTimer?.cancel();
     _audio.stopAudio();
+    _audio.stopTts();
     setState(() => _isPlaying = false);
   }
 
@@ -120,11 +138,7 @@ class _VideoTimelineEditorScreenState extends State<VideoTimelineEditorScreen> {
       if (_currentPositionSeconds <= accumulated) {
         if (_selectedSceneIndex != i) {
           _selectedSceneIndex = i;
-          // Play voiceover if available
-          final vo = _voiceovers.where((v) => v.sceneId == _scenes[i].id).firstOrNull;
-          if (vo != null && vo.localPath != null && File(vo.localPath!).existsSync()) {
-            _audio.playAudio(vo.localPath!, volume: _voiceoverVolume);
-          }
+          _playSceneAudio(i);
         }
         break;
       }
@@ -403,14 +417,24 @@ class _VideoTimelineEditorScreenState extends State<VideoTimelineEditorScreen> {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          const SizedBox(height: 6),
-          Text(
-            scene?.visualPrompt ?? 'Upload image or copy prompt for ChatGPT/Midjourney',
-            textAlign: TextAlign.center,
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.6)),
-          ),
+          const SizedBox(height: 12),
+          if (scene != null)
+            ElevatedButton.icon(
+              onPressed: () async {
+                setState(() => _isLoading = true);
+                await SceneVisualGenerator.instance.generateSceneImage(
+                  scene: scene,
+                  aspectRatio: _project?.aspectRatio ?? '9:16',
+                  visualStyle: _story?.genre ?? 'Cinematic',
+                  storyTitle: _story?.storyTitle ?? _project?.title ?? 'Reel Story',
+                  language: _story?.promptLanguage ?? 'hi',
+                );
+                await _loadProjectData();
+              },
+              icon: const Icon(Icons.auto_awesome, size: 16),
+              label: const Text('Generate Scene Photo 🎨', style: TextStyle(fontSize: 12)),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.accentPurple),
+            ),
         ],
       ),
     );

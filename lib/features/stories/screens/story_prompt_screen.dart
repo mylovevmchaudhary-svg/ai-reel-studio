@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/prompt_generator.dart';
 import '../../../core/services/story_engine.dart';
 import '../../../core/services/scene_visual_generator.dart';
+import '../../../core/services/audio_service.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../data/models/caption_model.dart';
 import '../../../data/models/voiceover_model.dart';
@@ -121,6 +122,18 @@ class _StoryPromptScreenState extends State<StoryPromptScreen> {
         );
         await _repo.saveCaption(caption);
 
+        // Auto synthesize offline audio file if narration exists
+        String? voPath;
+        if (s.narration != null && s.narration!.trim().isNotEmpty) {
+          try {
+            voPath = await AudioService.instance.synthesizeToFile(
+              s.narration!,
+              s.id,
+              language: widget.language,
+            );
+          } catch (_) {}
+        }
+
         final vo = VoiceoverModel(
           id: const Uuid().v4(),
           sceneId: s.id,
@@ -128,6 +141,7 @@ class _StoryPromptScreenState extends State<StoryPromptScreen> {
           ownerId: package.story.ownerId,
           sourceType: 'tts',
           durationSeconds: s.durationSeconds,
+          localPath: voPath,
         );
         await _repo.saveVoiceover(vo);
       }

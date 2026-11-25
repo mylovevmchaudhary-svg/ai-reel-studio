@@ -38,19 +38,19 @@ class SceneVisualGenerator {
     required String storyTitle,
     String? language,
   }) async {
-    // 1. Dimensions
-    double width = 1080;
-    double height = 1920;
+    // 1. Safe, optimized dimensions for fast generation and universal hardware compatibility
+    double width = 720;
+    double height = 1280;
     if (aspectRatio == '16:9') {
-      width = 1920;
-      height = 1080;
+      width = 1280;
+      height = 720;
     } else if (aspectRatio == '1:1') {
-      width = 1080;
-      height = 1080;
+      width = 720;
+      height = 720;
     }
 
     // 2. Determine Theme
-    final themeIndex = (scene.sceneIndex - 1) % _cinematicGradients.length;
+    final themeIndex = (scene.sceneIndex - 1).clamp(0, 9999) % _cinematicGradients.length;
     final gradientColors = _cinematicGradients[themeIndex];
 
     // 3. Paint using PictureRecorder & Canvas
@@ -91,35 +91,38 @@ class SceneVisualGenerator {
     canvas.drawCircle(Offset(width / 2, height * 0.45), width * 0.32, linePaint);
 
     // D. Draw Top Studio Header Badge
-    final badgeBgPaint = Paint()..color = Colors.black.withOpacity(0.45);
+    final badgeBgPaint = Paint()..color = Colors.black.withOpacity(0.5);
     final badgeRRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(width * 0.08, height * 0.06, width * 0.84, height * 0.045),
-      const Radius.circular(30),
+      Rect.fromLTWH(width * 0.08, height * 0.05, width * 0.84, height * 0.05),
+      const Radius.circular(24),
     );
     canvas.drawRRect(badgeRRect, badgeBgPaint);
 
-    // Header Text
-    final headerBuilder = ui.ParagraphBuilder(
-      ui.ParagraphStyle(
-        textAlign: TextAlign.center,
-        fontSize: width * 0.032,
-        fontWeight: FontWeight.bold,
+    // Header Text using TextPainter (Unicode and language safe)
+    final headerPainter = TextPainter(
+      text: TextSpan(
+        text: '🎬 AI REEL STUDIO  •  SCENE ${scene.sceneIndex}',
+        style: TextStyle(
+          color: const Color(0xFF00F0FF),
+          fontSize: width * 0.034,
+          fontWeight: FontWeight.bold,
+        ),
       ),
-    )
-      ..pushStyle(ui.TextStyle(color: const Color(0xFF00F0FF)))
-      ..addText('AI REEL STUDIO  •  SCENE ${scene.sceneIndex}')
-      ..pop();
-    final headerParagraph = headerBuilder.build()..layout(ui.ParagraphConstraints(width: width * 0.84));
-    canvas.drawParagraph(headerParagraph, Offset(width * 0.08, height * 0.07));
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+    )..layout(maxWidth: width * 0.84);
+    headerPainter.paint(
+      canvas,
+      Offset(width * 0.08 + (width * 0.84 - headerPainter.width) / 2, height * 0.05 + (height * 0.05 - headerPainter.height) / 2),
+    );
 
     // E. Draw Hero Motif in Center
     final heroPaint = Paint()
       ..color = Colors.white.withOpacity(0.9)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4;
+      ..strokeWidth = 3;
 
-    // Draw diamond / star emblem
-    final center = Offset(width / 2, height * 0.45);
+    final center = Offset(width / 2, height * 0.42);
     final radius = width * 0.16;
     final path = Path();
     for (int i = 0; i < 8; i++) {
@@ -137,82 +140,92 @@ class SceneVisualGenerator {
     canvas.drawPath(path, heroFill);
 
     // F. Draw Bottom Cinematic Information Card
-    final cardHeight = height * 0.36;
+    final cardHeight = height * 0.38;
     final cardY = height - cardHeight - (height * 0.04);
     final cardRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(width * 0.06, cardY, width * 0.88, cardHeight),
-      const Radius.circular(28),
+      const Radius.circular(24),
     );
 
     final cardBg = Paint()
       ..shader = ui.Gradient.linear(
         Offset(0, cardY),
         Offset(0, cardY + cardHeight),
-        [const Color(0xDD0A0E1A), const Color(0xF5060810)],
+        [const Color(0xEE0A0E1A), const Color(0xFA060810)],
       );
     canvas.drawRRect(cardRect, cardBg);
 
     final cardBorder = Paint()
-      ..color = const Color(0xFF8A2BE2).withOpacity(0.4)
+      ..color = const Color(0xFF8A2BE2).withOpacity(0.5)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+      ..strokeWidth = 2.5;
     canvas.drawRRect(cardRect, cardBorder);
 
-    // G. Title Text inside Card
-    final titleBuilder = ui.ParagraphBuilder(
-      ui.ParagraphStyle(
-        textAlign: TextAlign.left,
-        fontSize: width * 0.052,
-        fontWeight: FontWeight.bold,
+    // G. Title Text inside Card (Unicode and script safe)
+    final sceneTitle = scene.title?.trim().isNotEmpty == true ? scene.title! : 'Scene ${scene.sceneIndex}';
+    final titlePainter = TextPainter(
+      text: TextSpan(
+        text: sceneTitle,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: width * 0.050,
+          fontWeight: FontWeight.bold,
+        ),
       ),
-    )
-      ..pushStyle(ui.TextStyle(color: Colors.white))
-      ..addText(scene.title ?? 'Scene ${scene.sceneIndex}')
-      ..pop();
-    final titleParagraph = titleBuilder.build()..layout(ui.ParagraphConstraints(width: width * 0.76));
-    canvas.drawParagraph(titleParagraph, Offset(width * 0.12, cardY + (cardHeight * 0.1)));
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+      ellipsis: '...',
+    )..layout(maxWidth: width * 0.76);
+    titlePainter.paint(canvas, Offset(width * 0.12, cardY + (cardHeight * 0.08)));
 
-    // H. Narration / Dialogue Text inside Card
-    final narrationText = scene.narration ?? scene.visualPrompt;
-    final narrationBuilder = ui.ParagraphBuilder(
-      ui.ParagraphStyle(
-        textAlign: TextAlign.left,
-        fontSize: width * 0.038,
-        height: 1.4,
+    // H. Narration / Dialogue Text inside Card (Handles Hindi, Gujarati, English without crash)
+    final narrationText = (scene.narration?.trim().isNotEmpty == true)
+        ? scene.narration!
+        : ((scene.visualPrompt?.trim().isNotEmpty == true) ? scene.visualPrompt! : 'Cinematic Scene Visual');
+
+    final narrationPainter = TextPainter(
+      text: TextSpan(
+        text: narrationText,
+        style: TextStyle(
+          color: const Color(0xFFE2E8F0),
+          fontSize: width * 0.036,
+          height: 1.35,
+        ),
       ),
-    )
-      ..pushStyle(ui.TextStyle(color: const Color(0xFFE2E8F0)))
-      ..addText(narrationText.length > 140 ? '${narrationText.substring(0, 137)}...' : narrationText)
-      ..pop();
-    final narrationParagraph = narrationBuilder.build()..layout(ui.ParagraphConstraints(width: width * 0.76));
-    canvas.drawParagraph(narrationParagraph, Offset(width * 0.12, cardY + (cardHeight * 0.34)));
+      textDirection: TextDirection.ltr,
+      maxLines: 4,
+      ellipsis: '...',
+    )..layout(maxWidth: width * 0.76);
+    narrationPainter.paint(canvas, Offset(width * 0.12, cardY + (cardHeight * 0.28)));
 
     // I. Duration & Style Pill at bottom of card
-    final pillPaint = Paint()..color = const Color(0xFF8A2BE2).withOpacity(0.35);
+    final pillPaint = Paint()..color = const Color(0xFF8A2BE2).withOpacity(0.4);
     final pillRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(width * 0.12, cardY + (cardHeight * 0.78), width * 0.35, cardHeight * 0.14),
+      Rect.fromLTWH(width * 0.12, cardY + (cardHeight * 0.74), width * 0.45, cardHeight * 0.16),
       const Radius.circular(12),
     );
     canvas.drawRRect(pillRect, pillPaint);
 
-    final pillBuilder = ui.ParagraphBuilder(
-      ui.ParagraphStyle(
-        textAlign: TextAlign.center,
-        fontSize: width * 0.030,
-        fontWeight: FontWeight.bold,
+    final pillPainter = TextPainter(
+      text: TextSpan(
+        text: '⏱ ${scene.durationSeconds.toStringAsFixed(1)}s • $visualStyle',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: width * 0.030,
+          fontWeight: FontWeight.bold,
+        ),
       ),
-    )
-      ..pushStyle(ui.TextStyle(color: Colors.white))
-      ..addText('⏱ ${scene.durationSeconds.toStringAsFixed(1)}s  •  $visualStyle')
-      ..pop();
-    final pillParagraph = pillBuilder.build()..layout(ui.ParagraphConstraints(width: width * 0.35));
-    canvas.drawParagraph(pillParagraph, Offset(width * 0.12, cardY + (cardHeight * 0.81)));
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout(maxWidth: width * 0.43);
+    pillPainter.paint(canvas, Offset(width * 0.14, cardY + (cardHeight * 0.78)));
 
     // 4. Render to Image and Encode PNG
     final picture = recorder.endRecording();
     final img = await picture.toImage(width.toInt(), height.toInt());
     final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
     final Uint8List pngBytes = byteData!.buffer.asUint8List();
+    img.dispose();
 
     // 5. Save to Local Application Storage
     final appDir = await getApplicationDocumentsDirectory();

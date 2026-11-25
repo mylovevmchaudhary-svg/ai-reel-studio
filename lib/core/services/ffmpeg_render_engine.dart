@@ -14,6 +14,7 @@ import '../../data/models/audio_track_model.dart';
 import '../../data/models/video_export_model.dart';
 import '../../data/repositories/project_repository.dart';
 import '../utils/srt_parser.dart';
+import 'scene_visual_generator.dart';
 
 class RenderProgress {
   final double percentage; // 0.0 to 1.0
@@ -96,14 +97,44 @@ class FFmpegRenderEngine {
     await Future.delayed(const Duration(milliseconds: 200));
     if (_isCancelled) return;
 
-    // 3. Prepare Image Paths and Scene Durations
+    // 3. Prepare Image Paths and ensure every scene has a valid visual asset
     final List<String> imagePaths = [];
     final List<double> durations = [];
+
     for (final s in scenes) {
-      final asset = assets.where((a) => a.sceneId == s.id && a.isActive).firstOrNull;
+      SceneAssetModel? asset = assets.where((a) => a.sceneId == s.id && a.isActive).firstOrNull;
+      if (asset == null || asset.localPath == null || !File(asset.localPath!).existsSync()) {
+        try {
+          asset = await SceneVisualGenerator.instance.generateSceneImage(
+            scene: s,
+            aspectRatio: aspectRatio,
+            visualStyle: 'Cinematic',
+            storyTitle: project.title,
+          );
+          assets.add(asset);
+        } catch (e) {
+          debugPrint('[FFmpegRenderEngine] Error auto-generating asset for scene ${s.id}: $e');
+        }
+      }
+
       if (asset?.localPath != null && File(asset!.localPath!).existsSync()) {
         imagePaths.add(asset.localPath!);
         durations.add(s.durationSeconds);
+      }
+    }
+
+    // Determine audio track (first valid voiceover or custom audio track)
+    String? primaryAudioPath;
+    for (final vo in voiceovers) {
+      if (vo.localPath != null && File(vo.localPath!).existsSync()) {
+        primaryAudioPath = vo.localPath!;
+        break;
+      }
+    }
+    if (primaryAudioPath == null && audioTracks.isNotEmpty) {
+      final firstTrack = audioTracks.firstWhere((t) => t.localPath != null && File(t.localPath!).existsSync(), orElse: () => audioTracks.first);
+      if (firstTrack.localPath != null && File(firstTrack.localPath!).existsSync()) {
+        primaryAudioPath = firstTrack.localPath;
       }
     }
 
@@ -114,7 +145,7 @@ class FFmpegRenderEngine {
     await Future.delayed(const Duration(milliseconds: 300));
     if (_isCancelled) return;
 
-    // 4. Execute Native Hardware Video Rendering
+    // 4. Execute Native Hardware Video Rendering (H.264 MP4)
     bool nativeSuccess = false;
     if (Platform.isAndroid && imagePaths.isNotEmpty) {
       try {
@@ -123,32 +154,29 @@ class FFmpegRenderEngine {
           'durations': durations,
           'outputPath': outputFilePath,
           'fps': fps,
+          'audioPath': primaryAudioPath,
         });
         if (result != null && File(result).existsSync() && (await File(result).length()) > 0) {
           nativeSuccess = true;
           debugPrint('[FFmpegRenderEngine] Native render success: $result');
         }
       } catch (e) {
-        debugPrint('[FFmpegRenderEngine] Native render failed, creating standard container: $e');
+        debugPrint('[FFmpegRenderEngine] Native render failed: $e');
       }
     }
 
     yield RenderProgress(
-      percentage: 0.70,
-      statusMessage: 'Mixing multi-track voiceover and audio layers...',
+      percentage: 0.75,
+      statusMessage: 'Muxing audio layers & finalizing frames...',
     );
     await Future.delayed(const Duration(milliseconds: 300));
     if (_isCancelled) return;
 
-    // 5. Ensure valid output video file
     final outputFile = File(outputFilePath);
     if (!nativeSuccess && !await outputFile.exists()) {
-      // In non-Android or fallback, if image exists, copy the first frame as base or generate standard file
       if (imagePaths.isNotEmpty) {
         final firstImageBytes = await File(imagePaths.first).readAsBytes();
         await outputFile.writeAsBytes(firstImageBytes);
-      } else {
-        await outputFile.writeAsString('AI Reel Studio Rendered Output');
       }
     }
 
