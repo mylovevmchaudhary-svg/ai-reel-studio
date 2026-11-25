@@ -81,7 +81,7 @@ class MainActivity : FlutterActivity() {
         val inputSurface = codec.createInputSurface()
         codec.start()
 
-        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_FORMAT_MP4)
+        val muxer = MediaMuxer(outputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
         var trackIndex = -1
         var muxerStarted = false
 
