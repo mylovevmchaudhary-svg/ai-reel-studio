@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -80,14 +81,16 @@ class FFmpegRenderEngine {
     }
 
     final exportId = _uuid.v4();
-    final outputFilePath = p.join(exportDir.path, 'reel_${project.title.replaceAll(RegExp(r'\s+'), '_')}_$exportId.mp4');
+    final safeTitle = project.title.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_').trim();
+    final cleanTitle = safeTitle.isNotEmpty ? safeTitle : 'reel';
+    final outputFilePath = p.join(exportDir.path, '${cleanTitle}_$exportId.mp4');
     final srtFilePath = p.join(exportDir.path, 'subtitles_$exportId.srt');
 
-    // 2. Export Captions to SRT file
+    // 2. Export Captions to SRT file (explicit UTF-8)
     if (captions.isNotEmpty) {
       final srtContent = SrtParser.exportToSrt(captions);
       final srtFile = File(srtFilePath);
-      await srtFile.writeAsString(srtContent);
+      await srtFile.writeAsString(srtContent, encoding: utf8);
     }
 
     yield RenderProgress(

@@ -201,6 +201,36 @@ class _VideoPreviewScreenState extends State<VideoPreviewScreen> {
                               ),
                       ),
 
+                      // Top Scene Title Pill (Native Flutter widget with full Hindi & Gujarati font support)
+                      if (activeScene != null)
+                        Positioned(
+                          top: 16,
+                          left: 20,
+                          right: 20,
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.70),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.white24),
+                              ),
+                              child: Text(
+                                activeScene.title ?? 'Scene ${_activeSceneIndex + 1}',
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
                       // Caption
                       if (activeCaption != null)
                         Positioned(

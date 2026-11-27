@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 import '../constants/app_colors.dart';
 
 class AppTheme {
+  static const List<String> _fontFallbacks = [
+    'Noto Sans Devanagari',
+    'Noto Sans Gujarati',
+    'Noto Sans',
+    'Roboto',
+    'sans-serif',
+  ];
+
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      fontFamilyFallback: _fontFallbacks,
       scaffoldBackgroundColor: AppColors.bgDark,
       primaryColor: AppColors.accentPurple,
       colorScheme: const ColorScheme.dark(
@@ -115,6 +124,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamilyFallback: _fontFallbacks,
       scaffoldBackgroundColor: AppColors.bgLight,
       primaryColor: AppColors.accentPurple,
       colorScheme: const ColorScheme.light(

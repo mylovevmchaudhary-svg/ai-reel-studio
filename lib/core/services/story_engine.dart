@@ -195,12 +195,12 @@ class StoryEngine {
 
   static String _generateCatchyTitle(String prompt, String language) {
     final cleanPrompt = prompt.trim();
-    if (language == 'hi') {
-      return 'अविश्वसनीय कहानी: $cleanPrompt';
-    } else if (language == 'gu') {
-      return 'અદ્ભુત વાર્તા: $cleanPrompt';
+    if (cleanPrompt.isNotEmpty) {
+      return cleanPrompt;
     }
-    return 'The Legend of: $cleanPrompt';
+    if (language == 'hi') return 'मेरी रील कहानी';
+    if (language == 'gu') return 'મારી રીલ વાર્તા';
+    return 'My Reel Story';
   }
 
   static String _generateSynopsis(String prompt, String language) {
@@ -235,10 +235,10 @@ class StoryEngine {
       cameraAngle = 'Wide Angle Establishing View';
       lighting = 'Dramatic Rim Light Studio';
       if (language == 'hi') {
-        title = 'दृश्य 1: रहस्यमयी शुरुआत (The Hook)';
+        title = 'Scene 1: रहस्यमयी शुरुआत';
         narration = 'क्या आप जानते हैं इस अविश्वसनीय कहानी के पीछे का सबसे बड़ा सच? आइए देखते हैं...';
       } else if (language == 'gu') {
-        title = 'દ્રશ્ય 1: રહસ્યમય શરૂઆત (The Hook)';
+        title = 'Scene 1: રહસ્યમય શરૂઆત';
         narration = 'શું તમે જાણો છો આ અદ્ભુત ઘટના પાછળનું સાચું રહસ્ય? ચાલો જોઈએ...';
       } else {
         title = 'Scene 1: The Powerful Hook';
@@ -250,10 +250,10 @@ class StoryEngine {
       cameraAngle = 'Low Angle Heroic View';
       lighting = 'Golden Hour Sunset Glow';
       if (language == 'hi') {
-        title = 'अंतिम दृश्य: विजय और सीख (The Finale)';
+        title = 'Scene $sceneIndex: विजय और सीख';
         narration = 'यही है सफलता और साहस का वास्तविक रूप! अगर कहानी पसंद आई, तो फॉलो करना न भूलें।';
       } else if (language == 'gu') {
-        title = 'અંતિમ દ્રશ્ય: વિજય અને પ્રેરણા (The Finale)';
+        title = 'Scene $sceneIndex: વિજય અને પ્રેરણા';
         narration = 'આ જ છે ખરી હિંમત અને સફળતાનું રહસ્ય! આવી બીજી વાર્તાઓ માટે આજે જ ફોલો કરો.';
       } else {
         title = 'Scene $sceneIndex: The Grand Resolution';
@@ -265,10 +265,10 @@ class StoryEngine {
       cameraAngle = 'Extreme Close-Up Emotional';
       lighting = 'Neon Moody Cyberpunk';
       if (language == 'hi') {
-        title = 'दृश्य $sceneIndex: चरम सीमा (The Turning Point)';
+        title = 'Scene $sceneIndex: चरम सीमा';
         narration = 'और तभी एक ऐसा मोड़ आया जिसने हर किसी की सोच को हमेशा के लिए बदल दिया!';
       } else if (language == 'gu') {
-        title = 'દ્રશ્ય $sceneIndex: અણધાર્યો વળાંક (The Turning Point)';
+        title = 'Scene $sceneIndex: અણધાર્યો વળાંક';
         narration = 'અને ત્યારે જ એક એવો અણધાર્યો વળાંક આવ્યો જેણે પરિસ્થિતિને હંમેશ માટે બદલી નાખી!';
       } else {
         title = 'Scene $sceneIndex: The Turning Point';
@@ -280,10 +280,10 @@ class StoryEngine {
       cameraAngle = 'Cinematic Medium Shot';
       lighting = 'Soft Diffused Natural Light';
       if (language == 'hi') {
-        title = 'दृश्य $sceneIndex: संघर्ष और गति (The Progression)';
+        title = 'Scene $sceneIndex: संघर्ष और गति';
         narration = 'कदम दर कदम, चुनौतियाँ बढ़ती गईं, लेकिन हौसला कभी कम नहीं हुआ।';
       } else if (language == 'gu') {
-        title = 'દ્રશ્ય $sceneIndex: સંઘર્ષ અને આગળ વધવું (The Progression)';
+        title = 'Scene $sceneIndex: સંઘર્ષ અને પ્રગતિ';
         narration = 'એક પછી એક પડકારો સામે આવ્યા, પરંતુ આગળ વધવાનો ઉત્સાહ ક્યારેય ઓછો ન થયો.';
       } else {
         title = 'Scene $sceneIndex: The Rising Action';

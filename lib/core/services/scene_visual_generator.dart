@@ -140,7 +140,7 @@ class SceneVisualGenerator {
     canvas.drawPath(path, heroFill);
 
     // F. Draw Bottom Cinematic Information Card
-    final cardHeight = height * 0.38;
+    final cardHeight = height * 0.32;
     final cardY = height - cardHeight - (height * 0.04);
     final cardRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(width * 0.06, cardY, width * 0.88, cardHeight),
@@ -161,64 +161,73 @@ class SceneVisualGenerator {
       ..strokeWidth = 2.5;
     canvas.drawRRect(cardRect, cardBorder);
 
-    // G. Title Text inside Card (Unicode and script safe)
-    final sceneTitle = scene.title?.trim().isNotEmpty == true ? scene.title! : 'Scene ${scene.sceneIndex}';
+    // G. Determine Phase Name in Universal ASCII Typography (100% immune to ??? corruption)
+    String phaseLabel;
+    if (scene.sceneIndex == 1) {
+      phaseLabel = 'SCENE 1 • THE HOOK';
+    } else if (scene.sceneIndex == 2) {
+      phaseLabel = 'SCENE 2 • THE PROGRESSION';
+    } else if (scene.sceneIndex == 3) {
+      phaseLabel = 'SCENE 3 • THE TURNING POINT';
+    } else if (scene.sceneIndex == 4) {
+      phaseLabel = 'SCENE 4 • THE CLIMAX';
+    } else {
+      phaseLabel = 'SCENE ${scene.sceneIndex} • THE FINALE';
+    }
+
     final titlePainter = TextPainter(
       text: TextSpan(
-        text: sceneTitle,
+        text: phaseLabel,
         style: TextStyle(
           color: Colors.white,
-          fontSize: width * 0.050,
+          fontSize: width * 0.048,
           fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
         ),
       ),
       textDirection: TextDirection.ltr,
       maxLines: 1,
       ellipsis: '...',
     )..layout(maxWidth: width * 0.76);
-    titlePainter.paint(canvas, Offset(width * 0.12, cardY + (cardHeight * 0.08)));
+    titlePainter.paint(canvas, Offset(width * 0.12, cardY + (cardHeight * 0.14)));
 
-    // H. Narration / Dialogue Text inside Card (Handles Hindi, Gujarati, English without crash)
-    final narrationText = (scene.narration?.trim().isNotEmpty == true)
-        ? scene.narration!
-        : ((scene.visualPrompt?.trim().isNotEmpty == true) ? scene.visualPrompt! : 'Cinematic Scene Visual');
-
-    final narrationPainter = TextPainter(
+    // H. Cinematic Studio Sub-badge (Universal ASCII)
+    final subPainter = TextPainter(
       text: TextSpan(
-        text: narrationText,
+        text: 'AI REEL STUDIO • ULTRA HD MASTER VISUAL',
         style: TextStyle(
-          color: const Color(0xFFE2E8F0),
-          fontSize: width * 0.036,
-          height: 1.35,
+          color: const Color(0xFF00F0FF),
+          fontSize: width * 0.028,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.0,
         ),
       ),
       textDirection: TextDirection.ltr,
-      maxLines: 4,
-      ellipsis: '...',
+      maxLines: 1,
     )..layout(maxWidth: width * 0.76);
-    narrationPainter.paint(canvas, Offset(width * 0.12, cardY + (cardHeight * 0.28)));
+    subPainter.paint(canvas, Offset(width * 0.12, cardY + (cardHeight * 0.40)));
 
     // I. Duration & Style Pill at bottom of card
     final pillPaint = Paint()..color = const Color(0xFF8A2BE2).withOpacity(0.4);
     final pillRect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(width * 0.12, cardY + (cardHeight * 0.74), width * 0.45, cardHeight * 0.16),
+      Rect.fromLTWH(width * 0.12, cardY + (cardHeight * 0.65), width * 0.50, cardHeight * 0.20),
       const Radius.circular(12),
     );
     canvas.drawRRect(pillRect, pillPaint);
 
     final pillPainter = TextPainter(
       text: TextSpan(
-        text: '⏱ ${scene.durationSeconds.toStringAsFixed(1)}s • $visualStyle',
+        text: '⏱ ${scene.durationSeconds.toStringAsFixed(1)}s • ${visualStyle.toUpperCase()}',
         style: TextStyle(
           color: Colors.white,
-          fontSize: width * 0.030,
+          fontSize: width * 0.028,
           fontWeight: FontWeight.bold,
         ),
       ),
       textDirection: TextDirection.ltr,
       maxLines: 1,
-    )..layout(maxWidth: width * 0.43);
-    pillPainter.paint(canvas, Offset(width * 0.14, cardY + (cardHeight * 0.78)));
+    )..layout(maxWidth: width * 0.48);
+    pillPainter.paint(canvas, Offset(width * 0.14, cardY + (cardHeight * 0.70)));
 
     // 4. Render to Image and Encode PNG
     final picture = recorder.endRecording();
